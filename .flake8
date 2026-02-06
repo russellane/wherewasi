@@ -1,0 +1,31 @@
+[flake8]
+max-line-length = 97
+ignore =
+    # black; whitespace before ':'
+    E203,
+    # black; line break before binary operator
+    W503,
+    # line too long
+    E501,
+    # Formatting a regular string which could be a f-string (consider-using-f-string)
+    PLC209,
+    # Line too long (99/97) (line-too-long)
+    PLC301,
+    # Too many arguments (7/5) (too-many-arguments)
+    PLR913,
+    # Method could be a function (no-self-use)
+    PLR201,
+    # Redefining built-in 'id' (redefined-builtin)
+    PLW622,
+    # Too many local variables (16/15) (too-many-locals)
+    PLR914,
+    # Too many branches (14/12) (too-many-branches)
+    PLR912,
+    # Catching too general exception Exception (broad-except)
+    PLW703,
+    # Too many instance attributes (9/7) (too-many-instance-attributes)
+    PLR902,
+
+# don't check docstrings in tests
+per-file-ignores =
+    tests/*:D,PLC

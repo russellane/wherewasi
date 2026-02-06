@@ -5,7 +5,7 @@ import tempfile
 from pathlib import Path
 from unittest.mock import patch
 
-from wherewasi.cli import _format_date, _format_plain, _parse_datetime, _scan_projects
+from wherewasi.cli import _build_table, _format_date, _parse_datetime, _scan_projects
 
 
 def test_parse_datetime():
@@ -28,10 +28,11 @@ def test_scan_projects_with_real_data():
     assert isinstance(projects, list)
 
 
-def test_format_plain_empty():
-    output = _format_plain([])
-    assert "Project" in output
-    assert "Last Active" in output
+def test_build_table_empty():
+    table = _build_table([])
+    assert table.title == "Where Was I?"
+    assert len(table.columns) == 2
+    assert table.row_count == 0
 
 
 def test_scan_with_mock_data():

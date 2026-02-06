@@ -6,6 +6,9 @@ from datetime import datetime
 from pathlib import Path
 
 from libcli import BaseCLI
+from rich import box
+from rich.console import Console
+from rich.table import Table
 
 __all__ = ["WhereWasICLI"]
 
@@ -128,39 +131,34 @@ def _scan_projects() -> list[Project]:
     return projects
 
 
-def _format_plain(projects: list[Project]) -> str:
-    """Format projects as plain text."""
+def _build_table(projects: list[Project]) -> Table:
+    """Format projects as a rich Table."""
 
-    lines: list[str] = []
+    table = Table(title="Where Was I?", expand=True)
+    table.add_column("Directory", style="dim", no_wrap=True)
+    table.add_column("Sessions", ratio=1)
 
-    # Header
-    header = f"{'Project':<17}{'Last Active':<13}Directory"
-    separator = f"{'───────':<17}{'───────────':<13}─────────"
-    lines.append(header)
-    lines.append(separator)
-
-    for project in projects:
+    for i, project in enumerate(projects):
         short = _short_path(project.path)
-        date = _format_date(project.last_active)
-        lines.append(f"{project.name:<17}{date:<13}{short}")
 
-        if project.description:
-            lines.append(f"  {project.description}")
-
-        lines.append("  Sessions:")
+        sub = Table(show_header=False, show_edge=False, box=box.HORIZONTALS, show_lines=True, pad_edge=False, expand=True)
+        sub.add_column(ratio=1)
         for session in project.sessions:
             sdate = _format_date(session.modified)
             summary = session.summary or "(no summary)"
-            lines.append(f"    {sdate}  {summary}")
+            cell = f"{sdate}  {summary}"
             if session.first_prompt:
                 prompt = session.first_prompt
                 if len(prompt) > 70:
                     prompt = prompt[:67] + "..."
-                lines.append(f'            "{prompt}"')
+                cell += f'\n  "{prompt}"'
+            sub.add_row(cell)
 
-        lines.append("")
+        table.add_row(short, sub)
+        if i < len(projects) - 1:
+            table.add_section()
 
-    return "\n".join(lines)
+    return table
 
 
 def _format_markdown(projects: list[Project]) -> str:
@@ -242,11 +240,9 @@ class WhereWasICLI(BaseCLI):
             projects = projects[: self.options.n]
 
         if self.options.markdown:
-            output = _format_markdown(projects)
+            print(_format_markdown(projects))
         else:
-            output = _format_plain(projects)
-
-        print(output)
+            Console().print(_build_table(projects))
 
 
 def main(args: list[str] | None = None) -> None:

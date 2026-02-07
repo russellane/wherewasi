@@ -2,7 +2,7 @@
 
 import json
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 
 from libcli import BaseCLI
@@ -87,20 +87,21 @@ def _read_jsonl_session(path: Path) -> tuple[str, Session] | None:
     first_prompt = ""
     cwd = ""
     first_ts: str | None = None
-    last_ts: str | None = None
 
     try:
+        mtime = datetime.fromtimestamp(path.stat().st_mtime, tz=UTC)
+
+        # Read head for summary, first prompt, cwd, and first timestamp.
         with path.open(errors="replace") as f:
             for line in f:
                 try:
                     rec = json.loads(line)
                 except json.JSONDecodeError:
                     continue
-                ts = rec.get("timestamp")
-                if ts:
-                    if first_ts is None:
+                if first_ts is None:
+                    ts = rec.get("timestamp")
+                    if ts:
                         first_ts = ts
-                    last_ts = ts
                 if rec.get("type") == "summary":
                     summary = rec.get("summary", "")
                 if rec.get("type") == "user" and not first_prompt:
@@ -109,16 +110,18 @@ def _read_jsonl_session(path: Path) -> tuple[str, Session] | None:
                         first_prompt = content
                     if not cwd:
                         cwd = rec.get("cwd", "")
+                if first_ts and first_prompt and summary:
+                    break
     except OSError:
         return None
 
-    if first_ts is None or last_ts is None:
+    if first_ts is None:
         return None
 
     return cwd, Session(
         summary=summary,
         first_prompt=first_prompt,
-        modified=_parse_datetime(last_ts),
+        modified=mtime,
         created=_parse_datetime(first_ts),
     )
 

@@ -1,6 +1,7 @@
 """Where Was I - Claude Code session reporter."""
 
 import json
+import re
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
@@ -107,7 +108,7 @@ def _read_jsonl_session(path: Path) -> tuple[str, Session] | None:
                 if rec.get("type") == "user" and not first_prompt:
                     content = rec.get("message", {}).get("content", "")
                     if isinstance(content, str):
-                        first_prompt = content
+                        first_prompt = re.sub(r"<[^>]+>", "", content).strip()
                     if not cwd:
                         cwd = rec.get("cwd", "")
                 if first_ts and first_prompt and summary:

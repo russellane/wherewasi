@@ -1,6 +1,8 @@
 # russellane/Python.mk
 
-build::		__pypackages__ tags lint test doc
+VENV ?= .venv
+
+build::		$(VENV) tags lint test doc
 		pdm build
 
 lint::		black isort flake8
@@ -25,12 +27,12 @@ install::
 		-pipx uninstall $(PROJECT_NAME)
 		pipx install $(PROJECT_NAME)
 
-__pypackages__:
+$(VENV):
 		pdm install
 
 .PHONY:		tags
 tags::
-		ctags -R $(PROJECT) tests __pypackages__ 
+		ctags -R $(PROJECT) tests $(VENV)
 
 black::
 		pdm run black -q $(PROJECT) tests
@@ -60,7 +62,7 @@ coverage::
 		pdm run pytest --cov=$(PROJECT) tests
 
 clean::
-		rm -rf .coverage .mypy_cache .pdm-build .pytest_cache __pypackages__ dist htmlcov tags 
+		rm -rf .coverage .mypy_cache .pdm-build .pytest_cache $(VENV) dist htmlcov tags
 		find . -type f -name '*.py[co]' -delete
 		find . -type d -name __pycache__ -delete
 

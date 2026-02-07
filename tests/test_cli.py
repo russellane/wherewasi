@@ -39,20 +39,20 @@ def test_scan_with_mock_data():
     with tempfile.TemporaryDirectory() as tmpdir:
         project_dir = Path(tmpdir) / "test-project"
         project_dir.mkdir()
-        index = {
-            "version": 1,
-            "entries": [
-                {
-                    "sessionId": "abc123",
-                    "firstPrompt": "hello world",
-                    "summary": "Test session",
-                    "created": "2026-01-19T01:00:00Z",
-                    "modified": "2026-01-19T02:00:00Z",
-                }
-            ],
-            "originalPath": "/tmp/test-project",
-        }
-        (project_dir / "sessions-index.json").write_text(json.dumps(index))
+        lines = [
+            json.dumps({"type": "summary", "summary": "Test session"}),
+            json.dumps({
+                "type": "user",
+                "message": {"role": "user", "content": "hello world"},
+                "cwd": "/tmp/test-project",
+                "timestamp": "2026-01-19T01:00:00Z",
+            }),
+            json.dumps({
+                "type": "assistant",
+                "timestamp": "2026-01-19T02:00:00Z",
+            }),
+        ]
+        (project_dir / "abc123.jsonl").write_text("\n".join(lines))
 
         with patch("wherewasi.cli.CLAUDE_PROJECTS_DIR", Path(tmpdir)):
             projects = _scan_projects()

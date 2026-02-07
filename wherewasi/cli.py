@@ -80,55 +80,82 @@ def _read_project_description(project_path: str) -> str:
     return ""
 
 
+def _read_jsonl_session(path: Path) -> tuple[str, Session] | None:
+    """Read session metadata from a .jsonl file. Returns (cwd, Session) or None."""
+
+    summary = ""
+    first_prompt = ""
+    cwd = ""
+    first_ts: str | None = None
+    last_ts: str | None = None
+
+    try:
+        with path.open(errors="replace") as f:
+            for line in f:
+                try:
+                    rec = json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+                ts = rec.get("timestamp")
+                if ts:
+                    if first_ts is None:
+                        first_ts = ts
+                    last_ts = ts
+                if rec.get("type") == "summary":
+                    summary = rec.get("summary", "")
+                if rec.get("type") == "user" and not first_prompt:
+                    content = rec.get("message", {}).get("content", "")
+                    if isinstance(content, str):
+                        first_prompt = content
+                    if not cwd:
+                        cwd = rec.get("cwd", "")
+    except OSError:
+        return None
+
+    if first_ts is None or last_ts is None:
+        return None
+
+    return cwd, Session(
+        summary=summary,
+        first_prompt=first_prompt,
+        modified=_parse_datetime(last_ts),
+        created=_parse_datetime(first_ts),
+    )
+
+
 def _scan_projects() -> list[Project]:
     """Scan ~/.claude/projects for session data."""
 
-    projects: list[Project] = []
+    projects: dict[str, Project] = {}
 
     if not CLAUDE_PROJECTS_DIR.exists():
-        return projects
+        return []
 
-    for index_file in CLAUDE_PROJECTS_DIR.glob("*/sessions-index.json"):
-        try:
-            data = json.loads(index_file.read_text())
-        except (json.JSONDecodeError, OSError):
+    for project_dir in CLAUDE_PROJECTS_DIR.iterdir():
+        if not project_dir.is_dir():
             continue
 
-        entries = data.get("entries", [])
-        if not entries:
-            continue
+        for jsonl_file in project_dir.glob("*.jsonl"):
+            result = _read_jsonl_session(jsonl_file)
+            if not result:
+                continue
+            cwd, session = result
 
-        # Derive original path and project name
-        original_path = data.get("originalPath", "")
-        if not original_path:
-            # Fall back to projectPath from first entry
-            original_path = entries[0].get("projectPath", index_file.parent.name)
-        name = Path(original_path).name
-
-        description = _read_project_description(original_path)
-
-        sessions: list[Session] = []
-        for entry in entries:
-            sessions.append(
-                Session(
-                    summary=entry.get("summary", ""),
-                    first_prompt=entry.get("firstPrompt", ""),
-                    modified=_parse_datetime(entry.get("modified", "1970-01-01T00:00:00Z")),
-                    created=_parse_datetime(entry.get("created", "1970-01-01T00:00:00Z")),
+            if cwd not in projects:
+                projects[cwd] = Project(
+                    name=Path(cwd).name or cwd,
+                    path=cwd,
+                    description=_read_project_description(cwd),
+                    sessions=[],
                 )
-            )
+            projects[cwd].sessions.append(session)
 
-        project = Project(
-            name=name,
-            path=original_path,
-            description=description,
-            sessions=sorted(sessions, key=lambda s: s.modified, reverse=True),
-        )
-        projects.append(project)
+    for project in projects.values():
+        project.sessions.sort(key=lambda s: s.modified, reverse=True)
 
-    # Sort projects by most recent session
-    projects.sort(key=lambda p: p.last_active, reverse=True)
-    return projects
+    result = list(projects.values())
+    result.sort(key=lambda p: p.last_active, reverse=True)
+    return result
 
 
 def _build_table(projects: list[Project]) -> Table:

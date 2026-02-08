@@ -2,12 +2,13 @@
 
 VENV ?= .venv
 
-build::		$(VENV) tags lint test doc
-		pdm build
+build::		venv tags lint test doc dist
 
 lint::		black isort flake8
 test::		pytest
 doc::		;
+dist::
+		pdm build
 
 bump_micro::	_bump_micro clean build
 _bump_micro:
@@ -25,8 +26,10 @@ publish_prod::
 PROJECT_NAME := $(shell sed -ne 's/^name = "\(.*\)"$$/\1/p' pyproject.toml)
 install::
 		-pipx uninstall $(PROJECT_NAME)
-		pipx install $(PROJECT_NAME)
+		pipx install .
 
+.PHONY:		venv
+venv:		$(VENV)
 $(VENV):
 		pdm install
 

@@ -41,16 +41,20 @@ def test_scan_with_mock_data():
         project_dir.mkdir()
         lines = [
             json.dumps({"type": "summary", "summary": "Test session"}),
-            json.dumps({
-                "type": "user",
-                "message": {"role": "user", "content": "hello world"},
-                "cwd": "/tmp/test-project",
-                "timestamp": "2026-01-19T01:00:00Z",
-            }),
-            json.dumps({
-                "type": "assistant",
-                "timestamp": "2026-01-19T02:00:00Z",
-            }),
+            json.dumps(
+                {
+                    "type": "user",
+                    "message": {"role": "user", "content": "hello world"},
+                    "cwd": "/tmp/test-project",
+                    "timestamp": "2026-01-19T01:00:00Z",
+                }
+            ),
+            json.dumps(
+                {
+                    "type": "assistant",
+                    "timestamp": "2026-01-19T02:00:00Z",
+                }
+            ),
         ]
         (project_dir / "abc123.jsonl").write_text("\n".join(lines))
 

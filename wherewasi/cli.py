@@ -158,9 +158,9 @@ def _scan_projects() -> list[Project]:
     for project in projects.values():
         project.sessions.sort(key=lambda s: s.modified, reverse=True)
 
-    result = list(projects.values())
-    result.sort(key=lambda p: p.last_active, reverse=True)
-    return result
+    sorted_projects = list(projects.values())
+    sorted_projects.sort(key=lambda p: p.last_active, reverse=True)
+    return sorted_projects
 
 
 def _build_table(projects: list[Project]) -> Table:
@@ -173,7 +173,14 @@ def _build_table(projects: list[Project]) -> Table:
     for i, project in enumerate(projects):
         short = _short_path(project.path)
 
-        sub = Table(show_header=False, show_edge=False, box=box.HORIZONTALS, show_lines=True, pad_edge=False, expand=True)
+        sub = Table(
+            show_header=False,
+            show_edge=False,
+            box=box.HORIZONTALS,
+            show_lines=True,
+            pad_edge=False,
+            expand=True,
+        )
         sub.add_column(ratio=1)
         for session in project.sessions:
             sdate = _format_date(session.modified)

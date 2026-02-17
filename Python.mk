@@ -1,6 +1,6 @@
 # russellane/Python.mk
 
-VENV ?= .venv
+VENV ?=		.venv
 
 build::		venv tags lint test doc dist
 

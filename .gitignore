@@ -4,7 +4,7 @@
 .junk/
 .pdm-python
 .pytest_cache/
-__pycache__/
 .venv/
 dist/
 tags
+__pycache__/
